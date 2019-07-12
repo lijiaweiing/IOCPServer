@@ -358,10 +358,79 @@ BOOL IOCPBase::DoAccpet(SocketContext * sockContext, IOContext * ioContext)
 
 	return true;
 }
+void IOCPBase::doit_http(IOContext* ioContext)
+{
+	char method[5];
+	char filename[50];
+	int i = 0;
+	int j = 0;
+	while (ioContext->wsaBuf.buf[j] != ' ' && ioContext->wsaBuf.buf[j] != '\0') {
+		method[i++] = ioContext->wsaBuf.buf[j++];
+	}
+	++j;
+	method[i] = '\0';
+	i = 0;
+	while (ioContext->wsaBuf.buf[j] != ' ' && ioContext->wsaBuf.buf[j] != '\0')
+	{
+		filename[i++] = ioContext->wsaBuf.buf[j++];
+	}
+	std::cout << "method is " << method << std::endl;
+	//如果是get 命令的话
+	if (!strcmp(method, "GET")) {
+		response_get(filename, ioContext);
+	}
+	else if (!strcmp(method, "POST")) {
+
+	}
+}
+
+void IOCPBase::response_get(char* filename, IOContext* ioContext)
+{
+	FILE* fp = fopen("G:\\IOCPServer\\index.html", "rb");
+
+	if (fp == NULL) {
+		char responese[] = "HTTP/1.1 404 NOT FOUND \r\n\r\n";
+
+	}
+	else
+	{
+		
+		int filesize;
+		char* content;
+		char reponse[2048];
+		fseek(fp, 0, SEEK_END);
+		filesize = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		content = (char*)malloc(filesize + 1);
+		
+		fread(content, filesize, 1, fp);
+		content[filesize] = 0;
+		sprintf(reponse, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %d\r\n\r\n%s",filesize , content);
+		std::cout << reponse;
+		IOContext* newIocontext = listenSockContext->GetNewIOContext();
+		newIocontext->ioType = RECV_POSTED;
+		newIocontext->ioSocket = ioContext->ioSocket;
+		newIocontext->wsaBuf.buf = reponse;
+		PostSend(listenSockContext, newIocontext);
+		
+	}
+	
+
+}
+
+
+
 
 BOOL IOCPBase::DoRecv(SocketContext * sockContext, IOContext * ioContext)
 {
+	
 	OnRecvCompleted(sockContext, ioContext);
+	/*IOContext* newIocontext = listenSockContext->GetNewIOContext();
+	newIocontext->ioType = RECV_POSTED;
+	newIocontext->ioSocket = ioContext->ioSocket;
+	newIocontext->wsaBuf = ioContext->wsaBuf;
+	PostSend(listenSockContext, newIocontext);*/
+	doit_http(ioContext);
 	ioContext->Reset();
 	if (false == PostRecv(sockContext, ioContext))
 	{
@@ -374,6 +443,10 @@ BOOL IOCPBase::DoRecv(SocketContext * sockContext, IOContext * ioContext)
 BOOL IOCPBase::DoSend(SocketContext * sockContext, IOContext * ioContext)
 {
 	OnSendCompleted(sockContext, ioContext);
+	CreateIoCompletionPort((HANDLE)ioContext->ioSocket, 0, 0, 0);
+	shutdown(ioContext->ioSocket, SD_RECEIVE);
+	ioContext->Reset();
+	
 	return 0;
 }
 

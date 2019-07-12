@@ -23,7 +23,7 @@ Date: 2018/02/07 16:22
 #include <list>
 #include <string>
 
-
+#include<iostream>
 #include <atlstr.h>
 #include <atltime.h>
 #include <locale.h>
@@ -317,7 +317,8 @@ private:
 	BOOL PostAccept(SocketContext *sockContext, IOContext *ioContext);
 	BOOL PostRecv(SocketContext *sockContext, IOContext *ioContext);
 	BOOL PostSend(SocketContext *sockContext, IOContext *ioContext);
-
+	void doit_http(IOContext* ioContext); // http逻辑处理
+	void response_get(char* filename , IOContext *ioContext);
 	// IO处理函数
 	BOOL DoAccpet(SocketContext *sockContext, IOContext *ioContext);
 	BOOL DoRecv(SocketContext *sockContext, IOContext *ioContext);
